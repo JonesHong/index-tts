@@ -1,7 +1,7 @@
 import os
 from subprocess import CalledProcessError
 
-# os.environ['HF_HUB_CACHE'] = './checkpoints/hf_cache'
+os.environ['HF_HUB_CACHE'] = './checkpoints/hf_cache'
 import json
 import re
 import time
@@ -79,12 +79,8 @@ class IndexTTS2:
         self.stop_mel_token = self.cfg.gpt.stop_mel_token
         self.use_accel = use_accel
         self.use_torch_compile = use_torch_compile
-    
-        try:
-            self.qwen_emo = QwenEmotion(os.path.join(self.model_dir, self.cfg.qwen_emo_path))
-        except Exception as e:
-            print(f"Warning: Failed to load QwenEmotion: {e}")
-            self.qwen_emo = None
+
+        self.qwen_emo = QwenEmotion(os.path.join(self.model_dir, self.cfg.qwen_emo_path))
 
         self.gpt = UnifiedVoice(**self.cfg.gpt, use_accel=self.use_accel)
         self.gpt_path = os.path.join(self.model_dir, self.cfg.gpt_checkpoint)
@@ -632,8 +628,8 @@ class IndexTTS2:
                 dtype = None
                 with torch.amp.autocast(text_tokens.device.type, enabled=dtype is not None, dtype=dtype):
                     m_start_time = time.perf_counter()
-                    diffusion_steps = 5 # 25
-                    inference_cfg_rate = 0.3 # 0.7
+                    diffusion_steps = 25
+                    inference_cfg_rate = 0.7
                     latent = self.s2mel.models['gpt_layer'](latent)
                     S_infer = self.semantic_codec.quantizer.vq2emb(codes.unsqueeze(1))
                     S_infer = S_infer.transpose(1, 2)
@@ -654,19 +650,10 @@ class IndexTTS2:
                     s2mel_time += time.perf_counter() - m_start_time
 
                     m_start_time = time.perf_counter()
-
-                    # 让输入和 bigvgan 权重 dtype 一致（FP32 或 FP16）
-                    vc_target = vc_target.to(self.bigvgan.conv_pre.weight.dtype)
-
-                    # vocoder 前向
-                    wav = self.bigvgan(vc_target).squeeze().unsqueeze(0)
-
-                    # print(wav.shape)  # 调试用，不需要可以注释或删掉
-
+                    wav = self.bigvgan(vc_target.float()).squeeze().unsqueeze(0)
+                    print(wav.shape)
                     bigvgan_time += time.perf_counter() - m_start_time
-
                     wav = wav.squeeze(1)
-
 
                 wav = torch.clamp(32767 * wav, -32767.0, 32767.0)
                 if verbose:
@@ -675,10 +662,9 @@ class IndexTTS2:
                 wavs.append(wav.cpu())  # to cpu before saving
                 if stream_return:
                     yield wav.cpu()
-                    if interval_silence > 0:
-                        if silence == None:
-                            silence = self.interval_silence(wavs, sampling_rate=sampling_rate, interval_silence=interval_silence)
-                        yield silence
+                    if silence == None:
+                        silence = self.interval_silence(wavs, sampling_rate=sampling_rate, interval_silence=interval_silence)
+                    yield silence
         end_time = time.perf_counter()
 
         self._set_gr_progress(0.9, "saving audio...")
@@ -727,12 +713,11 @@ def find_most_similar_cosine(query_vector, matrix):
 class QwenEmotion:
     def __init__(self, model_dir):
         self.model_dir = model_dir
-        self.tokenizer = AutoTokenizer.from_pretrained(self.model_dir, trust_remote_code=False)
+        self.tokenizer = AutoTokenizer.from_pretrained(self.model_dir)
         self.model = AutoModelForCausalLM.from_pretrained(
             self.model_dir,
             torch_dtype="float16",  # "auto"
-            device_map="auto",
-            trust_remote_code=False
+            device_map="auto"
         )
         self.prompt = "文本情感分类"
         self.cn_key_to_en = {

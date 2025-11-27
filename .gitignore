@@ -28,4 +28,13 @@ desktop.ini
 /cache/
 /checkpoints/*
 !/checkpoints/*.yaml
+/checkpoints_v1.5/*
+!/checkpoints_v1.5/*.yaml
+/checkpoints_v2/*
+!/checkpoints_v2/*.yaml
 /outputs/
+
+
+/hf_cache/
+/DeepSpeed/
+/_torch_ext/

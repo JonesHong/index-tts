@@ -1,3 +1,33 @@
+import sys
+import os
+import argparse
+
+# 導入封裝好的模組
+import runtime_setup 
+
+# 1. 執行初始化，並取得環境路徑變數
+# 傳入 __file__ 是為了讓 runtime_setup 知道現在腳本的位置，從而正確推算 ROOT
+env_paths = runtime_setup.initialize(__file__)
+
+# 取得方便的路徑變數
+current_dir = env_paths["INDEX_TTS_DIR"]
+
+# 2. 你的主程式邏輯開始
+# 設定 sys.path (如果還需要額外的)
+sys.path.append(current_dir)
+sys.path.append(os.path.join(current_dir, "indextts"))
+
+# 3. Argparse 設定
+parser = argparse.ArgumentParser()
+
+# 使用剛剛回傳的路徑來設定預設值
+parser.add_argument(
+    "--model_dir", 
+    type=str, 
+    default=os.path.join(current_dir, "checkpoints"), 
+    help="Model checkpoints directory"
+)
+
 import html
 import json
 import os
@@ -6,6 +36,12 @@ import threading
 import time
 
 import warnings
+
+# Fix for DLL load failed error: import kaldifst before torch/pandas/etc
+try:
+    import kaldifst
+except ImportError:
+    pass
 
 warnings.filterwarnings("ignore", category=FutureWarning)
 warnings.filterwarnings("ignore", category=UserWarning)
@@ -23,8 +59,8 @@ parser = argparse.ArgumentParser(
 )
 parser.add_argument("--verbose", action="store_true", default=False, help="Enable verbose mode")
 parser.add_argument("--port", type=int, default=7860, help="Port to run the web UI on")
-parser.add_argument("--host", type=str, default="0.0.0.0", help="Host to run the web UI on")
-parser.add_argument("--model_dir", type=str, default="./checkpoints", help="Model checkpoints directory")
+parser.add_argument("--host", type=str, default="127.0.0.1", help="Host to run the web UI on")
+parser.add_argument("--model_dir", type=str, default=os.path.join(current_dir, "checkpoints"), help="Model checkpoints directory")
 parser.add_argument("--fp16", action="store_true", default=False, help="Use FP16 for inference if available")
 parser.add_argument("--deepspeed", action="store_true", default=False, help="Use DeepSpeed to accelerate if available")
 parser.add_argument("--cuda_kernel", action="store_true", default=False, help="Use CUDA kernel for inference if available")
@@ -51,6 +87,8 @@ import gradio as gr
 from indextts.infer_v2 import IndexTTS2
 from tools.i18n.i18n import I18nAuto
 
+import torch
+
 i18n = I18nAuto(language="Auto")
 MODE = 'local'
 tts = IndexTTS2(model_dir=cmd_args.model_dir,
@@ -59,9 +97,21 @@ tts = IndexTTS2(model_dir=cmd_args.model_dir,
                 use_deepspeed=cmd_args.deepspeed,
                 use_cuda_kernel=cmd_args.cuda_kernel,
                 )
+                
+# 如果启用了 --fp16，就强制把三个大模型都转成 FP16
+if cmd_args.fp16 and torch.cuda.is_available():
+    tts.gpt = tts.gpt.to(dtype=torch.float16)
+
+    tts.bigvgan = tts.bigvgan.to(dtype=torch.float16)
+
+# 再打印一遍 dtype 确认
+print(f"GPT dtype: {next(tts.gpt.parameters()).dtype}")
+print(f"s2mel dtype: {next(tts.s2mel.parameters()).dtype}")
+print(f"bigvgan dtype: {next(tts.bigvgan.parameters()).dtype}")
+
 # 支持的语言列表
 LANGUAGES = {
-    "中文": "zh_CN",
+    "中文": "zh_TW",
     "English": "en_US"
 }
 EMO_CHOICES_ALL = [i18n("与音色参考音频相同"),
@@ -75,7 +125,7 @@ os.makedirs("prompts",exist_ok=True)
 
 MAX_LENGTH_TO_USE_SPEED = 70
 example_cases = []
-with open("examples/cases.jsonl", "r", encoding="utf-8") as f:
+with open(os.path.join(current_dir, "examples/cases.jsonl"), "r", encoding="utf-8") as f:
     for line in f:
         line = line.strip()
         if not line:
@@ -438,5 +488,18 @@ with gr.Blocks(title="IndexTTS Demo") as demo:
 
 
 if __name__ == "__main__":
-    demo.queue(20)
-    demo.launch(server_name=cmd_args.host, server_port=cmd_args.port)
+    try:
+        demo.queue(concurrency_count=20, status_update_rate=1.0)
+    except TypeError:
+        try:
+            demo.queue()
+        except Exception:
+            pass
+
+    demo.launch(
+    server_name=cmd_args.host,
+    server_port=cmd_args.port,
+    inbrowser=True,
+    show_error=True,
+)
+
