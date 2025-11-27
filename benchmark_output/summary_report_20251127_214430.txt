@@ -1,0 +1,105 @@
+================================================================================
+IndexTTS Streaming Performance Test - Summary Report
+Generated: 2025-11-27 21:44:31
+================================================================================
+
+
+================================================================================
+Test Suite: Suite1_Voice_Comparison
+================================================================================
+
+Test: voice_06_baseline
+Description: Voice 06 - Baseline (Default Parameters)
+✅ Status: SUCCESS
+   TTFB: 8.00s
+   Total Time: 40.23s
+   Avg Gen Rate: 0.86x
+   Overall RTF: 1.142
+   Memory Usage: 0.2 MB
+
+Test: voice_07_baseline
+Description: Voice 07 - Baseline (Default Parameters)
+✅ Status: SUCCESS
+   TTFB: 5.89s
+   Total Time: 30.39s
+   Avg Gen Rate: 0.87x
+   Overall RTF: 1.114
+   Memory Usage: -0.0 MB
+
+
+================================================================================
+Test Suite: Suite2_Speed_Strategy
+================================================================================
+
+Test: voice_07_no_speed
+Description: Voice 07 - No Speed Modification
+✅ Status: SUCCESS
+   TTFB: 5.95s
+   Total Time: 31.55s
+   Avg Gen Rate: 0.87x
+   Overall RTF: 1.126
+   Memory Usage: 0.0 MB
+
+Test: voice_07_pre_speed_1.2x
+Description: Voice 07 - Pre-Speed 1.2x (Reference Audio Acceleration)
+✅ Status: SUCCESS
+   TTFB: 4.99s
+   Total Time: 29.34s
+   Avg Gen Rate: 0.88x
+   Overall RTF: 1.105
+   Memory Usage: 0.1 MB
+
+Test: voice_07_post_speed_1.2x
+Description: Voice 07 - Post-Speed 1.2x (Playback Acceleration)
+✅ Status: SUCCESS
+   TTFB: 5.59s
+   Total Time: 30.40s
+   Avg Gen Rate: 0.88x
+   Overall RTF: 1.100
+   Memory Usage: 0.2 MB
+
+Test: voice_07_hybrid_speed_1.2x
+Description: Voice 07 - Hybrid Speed 1.2x (Pre + Post)
+✅ Status: SUCCESS
+   TTFB: 4.86s
+   Total Time: 30.93s
+   Avg Gen Rate: 0.86x
+   Overall RTF: 1.135
+   Memory Usage: 0.0 MB
+
+
+================================================================================
+Test Suite: Suite3_Version_Mode
+================================================================================
+
+Test: v1_streaming
+Description: V1 - Streaming Mode
+✅ Status: SUCCESS
+   TTFB: 1.04s
+   Total Time: 20.23s
+   Avg Gen Rate: 1.71x
+   Overall RTF: 0.577
+   Memory Usage: 0.0 MB
+
+Test: v2_streaming_token
+Description: V2 - Streaming Mode (Token-based)
+✅ Status: SUCCESS
+   TTFB: 5.58s
+   Total Time: 33.34s
+   Avg Gen Rate: 0.83x
+   Overall RTF: 1.174
+   Memory Usage: 0.0 MB
+
+Test: v2_streaming_word
+Description: V2 - Streaming Mode (Word-based)
+✅ Status: SUCCESS
+   TTFB: 1.68s
+   Total Time: 36.32s
+   Avg Gen Rate: 0.83x
+   Overall RTF: 1.132
+   Memory Usage: 0.1 MB
+
+
+================================================================================
+End of Report
+================================================================================

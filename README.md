@@ -1,8 +1,10 @@
 # Index-TTS (Custom Fork)
 
+**Languages**: [English](#) | [繁體中文](README.zh-TW.md)
+
 > [!NOTE]
 > **This is a customized fork of the official Index-TTS project.**
-> 
+>
 > For the original README and official documentation, please visit:
 > **https://github.com/index-tts/index-tts**
 
@@ -35,7 +37,7 @@ uv run test_streaming.py \
   --pre_speed_ref 1.3 \
   --speed 1.0 \
   --warmup \
-  --text "你的測試文本"
+  --text "Your test text"
 ```
 
 ### 📖 `test_streaming.py` Features
@@ -45,7 +47,7 @@ uv run test_streaming.py \
   - Speeds up the reference audio file using time-stretching
   - TTS model mimics the faster speech pattern
   - Uses `pyrubberband` for high-quality time-stretching
-  
+
 - **`--speed`**: Post-process playback speed
   - Applies DSP time-stretching to generated audio during playback
   - Independent from TTS generation
@@ -70,7 +72,151 @@ The script provides detailed performance metrics:
 - Parallel efficiency (how much generation overlaps with playback)
 - Reference audio analysis (format, bitrate, duration)
 
-### 🔧 Environment Setup with `runtime_setup.py`
+---
+
+## 📊 Benchmark Testing
+
+### 🚀 Quick Start - Run Complete Test Suite
+
+```bash
+# Windows (Recommended: Python version)
+uv run run_tests_launcher.py
+
+# Or use batch file
+run_tests.bat
+```
+
+### 📈 Test Suite Overview
+
+The comprehensive benchmark testing includes **3 test suites with 9 test cases** in total, automatically generating analysis reports in multiple formats:
+
+#### **Test Suite 1: Reference Audio Comparison** (2 tests)
+Compare different reference audio files (voice_06.wav vs voice_07.wav) with identical parameters
+- Version: v2
+- Segmentation: token
+- Includes warmup
+
+#### **Test Suite 2: Speed Strategy Comparison** (4 tests) ⭐ With Audio Output
+Compare four speed modification strategies:
+1. **No Speed** - Baseline without speed modification
+2. **Pre-Speed 1.2x** - Pre-processing acceleration (speed up reference audio)
+3. **Post-Speed 1.2x** - Post-processing acceleration (DSP time-stretching)
+4. **Hybrid 1.2x** - Hybrid acceleration (combines both methods)
+
+**Output**: 4 WAV files for manual audio quality evaluation
+
+#### **Test Suite 3: Version & Mode Comparison** (3 tests)
+Compare different versions and segmentation modes:
+- v1 streaming
+- v2 streaming (token-based)
+- v2 streaming (word-based)
+
+### 📁 Test Output
+
+After execution, the following files are generated in the `test_results/` directory:
+
+```
+test_results/
+├── test_results_YYYYMMDD_HHMMSS.csv           # 📊 CSV statistics table
+├── test_results_YYYYMMDD_HHMMSS.json          # 📝 Complete test logs
+├── performance_comparison_YYYYMMDD_HHMMSS.png # 📈 Performance comparison chart
+├── efficiency_analysis_YYYYMMDD_HHMMSS.png    # 📈 Efficiency analysis chart
+├── summary_report_YYYYMMDD_HHMMSS.txt         # 📄 Summary report
+└── audio_samples/                              # 🎵 Audio samples (Suite 2)
+    ├── voice_07_no_speed.wav
+    ├── voice_07_pre_speed_1.2x.wav
+    ├── voice_07_post_speed_1.2x.wav
+    └── voice_07_hybrid_speed_1.2x.wav
+```
+
+### 📊 Test Metrics
+
+#### **Performance Comparison Chart** (performance_comparison)
+![Performance Comparison](test_results/performance_comparison_example.png)
+
+1. **TTFB (Time To First Byte)** - First Response Time
+   - Measures latency from start to first audio chunk
+   - ✅ Excellent: <3s | ⚠️ Acceptable: <5s | ❌ Need Optimization: >5s
+
+2. **Total Generation Time** - Complete Generation Duration
+   - Total time required to generate complete audio
+   - Lower is better, affects overall efficiency
+
+3. **Average Generation Rate** - Average Generation Speed Multiplier
+   - Ratio of audio duration / generation time
+   - ✅ Excellent: >2.0x | ✅ Good: >1.0x | ❌ Insufficient: <1.0x
+   - **Must be >1.0x for real-time streaming**
+
+#### **Efficiency Analysis Chart** (efficiency_analysis)
+![Efficiency Analysis](test_results/efficiency_analysis_example.png)
+
+1. **Overall RTF (Real-Time Factor)** - Overall Real-Time Factor
+   - Total elapsed time / audio duration
+   - ✅ Excellent: <0.5 | ✅ Good: <1.0 | ⚠️ Acceptable: <1.5
+
+2. **Parallel Efficiency** - Concurrent Processing Efficiency
+   - Percentage of generation and playback overlap
+   - ✅ Excellent: >80% | ✅ Good: >60% | ⚠️ Need Improvement: <60%
+   - High parallel efficiency indicates good streaming performance
+
+3. **Memory Usage** - Memory Consumption
+   - Peak memory usage (MB)
+   - Monitors resource consumption
+
+### 📋 CSV Data Fields
+
+The generated CSV file contains the following fields:
+
+| Field | Description | Unit |
+|-------|-------------|------|
+| `test_name` | Test case name | - |
+| `ttfb` | First response time | seconds (s) |
+| `total_time` | Total generation time | seconds (s) |
+| `avg_gen_rate` | Average generation rate | multiplier (x) |
+| `max_gen_rate` | Maximum generation rate | multiplier (x) |
+| `min_gen_rate` | Minimum generation rate | multiplier (x) |
+| `overall_rtf` | Overall RTF | - |
+| `parallel_efficiency` | Parallel efficiency | percentage (%) |
+| `total_chunks` | Total audio chunks | count |
+| `total_audio_duration` | Total audio duration | seconds (s) |
+| `peak_memory_mb` | Peak memory | MB |
+| `avg_memory_mb` | Average memory | MB |
+
+### 🔧 Dependencies
+
+#### Required Packages
+```bash
+uv pip install pyrubberband librosa opencc-python-reimplemented sounddevice soundfile torch numpy
+```
+
+#### Optional Packages (Enable Full Features)
+```bash
+# Visualization chart generation
+uv pip install matplotlib
+
+# Memory monitoring
+uv pip install psutil
+```
+
+**Note**: Tests can run without optional packages, but charts or memory data will be missing.
+
+### 📖 Detailed Documentation
+
+For more testing information, refer to:
+- **Quick Start**: [QUICKSTART.md](QUICKSTART.md)
+- **Complete Test Guide**: [TEST_GUIDE.md](TEST_GUIDE.md)
+- **Testing System Overview**: [README_TESTING.md](README_TESTING.md)
+- **Technical Implementation Details**: [TESTING_IMPLEMENTATION.md](TESTING_IMPLEMENTATION.md)
+
+### ⏱️ Estimated Execution Time
+
+- **Complete Test Suite**: 30-60 minutes (depends on hardware performance)
+- **Single Test**: 3-5 minutes
+- **GPU Acceleration**: Significantly faster (CUDA recommended)
+
+---
+
+## 🔧 Environment Setup with `runtime_setup.py`
 
 This fork includes a custom environment initialization system:
 
@@ -126,18 +272,8 @@ hf download IndexTeam/IndexTTS-1.5 --local-dir=checkpoints_v1.5
 ### Additional Dependencies for Streaming
 ```bash
 # Install required packages for streaming features
-uv pip install pyrubberband librosa sounddevice soundfile opencc-python-reimplemented
+uv pip install pyrubberband sounddevice soundfile opencc-python-reimplemented
 ```
-
----
-
-## 🎵 Example Audio Files
-
-This fork includes several example reference audio files in the `examples/` directory:
-- `Joneshong.wav` - Default reference voice
-- `GY.wav`, `DIDI.wav`, `JADE.wav`, `Sean.wav` - Additional voices
-- `阿璋.wav` - Chinese voice sample
-- `voice_06_1.3x.wav` - Pre-processed speed-adjusted sample
 
 ---
 
@@ -146,10 +282,7 @@ This fork includes several example reference audio files in the `examples/` dire
 ### `test_infer.py`
 Basic inference testing without streaming.
 
-### `test_streaming_enhanced.py`
-Enhanced version with additional experimental features.
-
-### `prepare_speed_adjusted_ref.py` & `prepare_speed_ref_final.py`
+### `prepare_speed_ref_final.py`
 Utilities for pre-processing reference audio with speed adjustments.
 
 ---
@@ -164,7 +297,6 @@ Utilities for pre-processing reference audio with speed adjustments.
 ### 2. **Speed Control**
 - Dual-stage speed control (pre-processing + post-processing)
 - High-quality time-stretching using `pyrubberband`
-- Fallback to `librosa` if needed
 
 ### 3. **Environment Management**
 - `runtime_setup.py` - Centralized environment initialization
@@ -220,29 +352,6 @@ Utilities for pre-processing reference audio with speed adjustments.
 
 ---
 
-## 📚 Original Project Information
-
-This fork is based on **IndexTTS2** by the Bilibili Index Team.
-
-- **Original Repository**: https://github.com/index-tts/index-tts
-- **Paper**: [IndexTTS2 on arXiv](https://arxiv.org/abs/2506.21619)
-- **Demo**: https://index-tts.github.io/index-tts2.github.io/
-- **HuggingFace**: https://huggingface.co/IndexTeam/IndexTTS-2
-
-### Citation
-If you use this fork or the original IndexTTS2 in your research, please cite:
-
-```bibtex
-@article{zhou2025indextts2,
-  title={IndexTTS2: A Breakthrough in Emotionally Expressive and Duration-Controlled Auto-Regressive Zero-Shot Text-to-Speech},
-  author={Siyi Zhou, Yiquan Zhou, Yi He, Xun Zhou, Jinchao Wang, Wei Deng, Jingchen Shu},
-  journal={arXiv preprint arXiv:2506.21619},
-  year={2025}
-}
-```
-
----
-
 ## 📝 License
 
 This fork maintains the same license as the original project. See [LICENSE](LICENSE) for details.
@@ -259,8 +368,3 @@ This is a personal fork for LiveKit integration. For contributions to the main p
 
 For questions about this fork:
 - GitHub Issues: https://github.com/JonesHong/index-tts/issues
-
-For questions about the original project:
-- Email: indexspeech@bilibili.com
-- QQ Group: 663272642 (No.4), 1013410623 (No.5)
-- Discord: https://discord.gg/uT32E7KDmy
